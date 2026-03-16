@@ -48,12 +48,7 @@ cmd_list() {
     "limit=${limit}")
 
   local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-  if [[ $rc -ne 0 ]]; then
-    echo "$body" >&2
+  if ! body=$(paginate "$url"); then
     exit 1
   fi
 

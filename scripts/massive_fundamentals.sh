@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/_lib.sh"
 
-usage() {
+show_help() {
   _usage "massive_fundamentals.sh" "Fetch company fundamentals data" \
 "  massive_fundamentals.sh <subcommand> [OPTIONS]
 
@@ -37,7 +37,7 @@ Options:
 }
 
 if _has_flag "--help" "$@" || [[ $# -eq 0 ]]; then
-  usage
+  show_help
 fi
 
 subcommand="$1"
@@ -262,6 +262,6 @@ case "$subcommand" in
     ;;
   *)
     echo "{\"error\":\"unknown subcommand: ${subcommand}\"}" >&2
-    usage
+    show_help
     ;;
 esac

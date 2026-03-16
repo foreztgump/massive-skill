@@ -197,7 +197,8 @@ _format_price() {
 _extract_results() {
   local json="$1"
   echo "$json" | jq '
-    if (.results | type) == "array" then .results
+    if (.results.values | type) == "array" then .results.values
+    elif (.results | type) == "array" then .results
     elif (.tickers | type) == "array" then .tickers
     elif (.ticker | type) == "object" then [.ticker]
     elif (. | type) == "array" then .
