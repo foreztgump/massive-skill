@@ -37,9 +37,7 @@ url=$(_build_url "/v2/reference/news" \
   "limit=${limit}" \
   "sort=${sort}")
 
-body=$(paginate "$url")
-# shellcheck disable=SC2181
-if [[ $? -ne 0 ]]; then
+if ! body=$(paginate "$url"); then
   exit 1
 fi
 

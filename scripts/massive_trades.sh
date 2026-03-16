@@ -73,7 +73,6 @@ cmd_last() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get last trade"; then
-    _json_output "$body"
     exit 1
   fi
 

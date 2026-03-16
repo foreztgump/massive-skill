@@ -37,7 +37,6 @@ cmd_status() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get market status"; then
-    _json_output "$body"
     exit 1
   fi
 
@@ -53,7 +52,6 @@ cmd_holidays() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get market holidays"; then
-    _json_output "$body"
     exit 1
   fi
 
@@ -75,7 +73,6 @@ cmd_exchanges() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get exchanges"; then
-    _json_output "$body"
     exit 1
   fi
 
@@ -97,7 +94,6 @@ cmd_conditions() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get conditions"; then
-    _json_output "$body"
     exit 1
   fi
 
