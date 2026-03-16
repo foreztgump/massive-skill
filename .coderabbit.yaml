@@ -1,0 +1,48 @@
+language: en-US
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  auto_review:
+    enabled: true
+  path_instructions:
+    - path: "**/*.sh"
+      instructions: |
+        Review against CODE_PRINCIPLES.md. Focus on:
+        - SRP: does each function have a single responsibility?
+        - Deep modules: are script interfaces simple while hiding complexity?
+        - Error handling: are all HTTP requests and jq operations checked?
+        - Naming: do names reveal intent using snake_case?
+        - No magic values: are all non-obvious literals named constants?
+        - Security: is the API key handled safely? No logging of credentials?
+    - path: "tests/**/*.bats"
+      instructions: |
+        Tests follow Arrange-Act-Assert. Each test covers one behavior.
+        Test names describe expected behavior, not implementation details.
+        No test logic duplication — use helpers for shared setup.
+  tools:
+    shellcheck:
+      enabled: true
+  custom_checks:
+    - name: "Code Quality Hard Rules"
+      mode: "warning"
+      instructions: |
+        Check changed files for these violations and report with specific file:line references:
+        1. Functions longer than 40 lines — suggest decomposition
+        2. Magic numbers/strings not defined as named constants (ignore 0, 1, true, false, '')
+        3. Functions with more than 3 parameters — suggest parameter object or flags
+        4. Nesting deeper than 3 levels — suggest early returns or extraction
+        5. HTTP operations without error handling (missing check_http_status calls)
+        6. Duplicated logic blocks (>5 similar lines in multiple locations)
+        7. Generic names (data, info, item, temp, result) in scopes longer than 3 lines
+        8. Speculative abstractions — code that handles cases not required by the current task (YAGNI)
+        9. Output to stdout mixed with error messages (errors must go to stderr)
+        Pass if no violations found. Warn with specific file:line references for each violation.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CODE_PRINCIPLES.md"
+  learnings:
+    scope: auto
+chat:
+  auto_reply: true
