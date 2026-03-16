@@ -180,8 +180,17 @@ paginate() {
       return 1
     fi
 
+    # If .results is not an array (e.g. technical indicators return an object),
+    # return the raw response directly — merging only works for arrays
+    local results_type
+    results_type=$(echo "$body" | jq -r '.results | type' 2>/dev/null)
+    if [[ "$results_type" != "array" ]]; then
+      echo "$body"
+      return 0
+    fi
+
     local page_results
-    page_results=$(echo "$body" | jq '.results // []' 2>/dev/null)
+    page_results=$(echo "$body" | jq '.results' 2>/dev/null)
     if [[ "$page_results" != "null" && "$page_results" != "[]" ]]; then
       all_results=$(echo "$all_results" "$page_results" | jq -s '.[0] + .[1]')
     fi
