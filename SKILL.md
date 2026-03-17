@@ -10,10 +10,7 @@ description: >
   income statements, cash flow, ratios), short interest, technical indicators
   (SMA, EMA, RSI, MACD), options contracts and chains, futures contracts and products,
   market status, exchanges, and top movers.
-version: 1.0.0
-license: MIT
 allowed-tools: Bash
-metadata: {"openclaw":{"requires":{"env":["MASSIVE_API_KEY"],"bins":["curl","jq"]},"primaryEnv":"MASSIVE_API_KEY","configPaths":["~/.config/massive-skill/"]}}
 ---
 
 # Massive Market Data Skill
@@ -91,6 +88,8 @@ User wants market data?
     └── Condition codes → massive_market.sh conditions
 ```
 
+**All scripts are located at `${CLAUDE_SKILL_DIR}/scripts/`.** Always prefix script paths with `${CLAUDE_SKILL_DIR}/scripts/` when running them.
+
 ## Scripts Reference
 
 | Script | Purpose | Key Subcommands |
@@ -106,38 +105,27 @@ User wants market data?
 | `massive_futures.sh` | Futures data | `contracts`, `products`, `schedules`, `snapshot`, `bars`, `trades`, `quotes` |
 | `massive_market.sh` | Market operations | `status`, `holidays`, `exchanges`, `conditions` |
 | `massive_format.sh` | Format JSON for display | `--type`, `--format`, `--top` |
-| `_lib.sh` | Shared library (internal) | — |
 
 ## Quick Start
 
-Get Apple's current stock price:
 ```bash
-scripts/massive_price.sh snapshot AAPL
-```
+# Get Apple's current stock price
+${CLAUDE_SKILL_DIR}/scripts/massive_price.sh snapshot AAPL
 
-Get 30 days of daily OHLC bars for Tesla:
-```bash
-scripts/massive_price.sh bars TSLA 2025-01-01 2025-01-31
-```
+# Get 30 days of daily OHLC bars for Tesla
+${CLAUDE_SKILL_DIR}/scripts/massive_price.sh bars TSLA 2025-01-01 2025-01-31
 
-Get latest market news:
-```bash
-scripts/massive_news.sh --limit 5 | scripts/massive_format.sh --type news --top 5
-```
+# Get latest market news
+${CLAUDE_SKILL_DIR}/scripts/massive_news.sh --limit 5 | ${CLAUDE_SKILL_DIR}/scripts/massive_format.sh --type news --top 5
 
-Get Apple's financial ratios:
-```bash
-scripts/massive_fundamentals.sh ratios AAPL
-```
+# Get Apple's financial ratios
+${CLAUDE_SKILL_DIR}/scripts/massive_fundamentals.sh ratios AAPL
 
-Get options chain for SPY:
-```bash
-scripts/massive_options.sh chain SPY --contract-type call --expiration-date 2025-03-21
-```
+# Get options chain for SPY
+${CLAUDE_SKILL_DIR}/scripts/massive_options.sh chain SPY --contract-type call
 
-Check if market is open:
-```bash
-scripts/massive_market.sh status
+# Check if market is open
+${CLAUDE_SKILL_DIR}/scripts/massive_market.sh status
 ```
 
 ## Behavior Rules (MANDATORY)
@@ -157,16 +145,16 @@ scripts/massive_market.sh status
 
 ```bash
 # Human-readable stock snapshot
-scripts/massive_price.sh snapshot AAPL | scripts/massive_format.sh --type snapshot
+${CLAUDE_SKILL_DIR}/scripts/massive_price.sh snapshot AAPL | ${CLAUDE_SKILL_DIR}/scripts/massive_format.sh --type snapshot
 
 # CSV export of bars
-scripts/massive_price.sh bars AAPL 2025-01-01 2025-01-31 | scripts/massive_format.sh --type stocks --format csv
+${CLAUDE_SKILL_DIR}/scripts/massive_price.sh bars AAPL 2025-01-01 2025-01-31 | ${CLAUDE_SKILL_DIR}/scripts/massive_format.sh --type stocks --format csv
 
 # Top 5 news articles
-scripts/massive_news.sh --ticker AAPL --limit 10 | scripts/massive_format.sh --type news --top 5
+${CLAUDE_SKILL_DIR}/scripts/massive_news.sh --ticker AAPL --limit 10 | ${CLAUDE_SKILL_DIR}/scripts/massive_format.sh --type news --top 5
 
 # Pretty-print any JSON
-scripts/massive_fundamentals.sh ratios AAPL | scripts/massive_format.sh --format full
+${CLAUDE_SKILL_DIR}/scripts/massive_fundamentals.sh ratios AAPL | ${CLAUDE_SKILL_DIR}/scripts/massive_format.sh --format full
 ```
 
 ## Exit Codes
@@ -176,19 +164,15 @@ scripts/massive_fundamentals.sh ratios AAPL | scripts/massive_format.sh --format
 | 0 | Success — results on stdout | Format and present results |
 | 1 | Error — something failed | Report the error from stderr |
 
-## Data Storage
-
-Minimal local state at `~/.config/massive-skill/` — created on first run for potential future caching. No persistent data is stored by default.
-
 ## Security
 
-All scripts source `scripts/_lib.sh` for shared HTTP functions. The library:
+All scripts source `_lib.sh` for shared HTTP functions. The library:
 
 - Makes requests to a **single endpoint**: `https://api.massive.com`
 - Uses **one credential**: `MASSIVE_API_KEY` (sent via query parameter)
 - Writes **only** to `~/.config/massive-skill/`
 - Does not read other environment variables, contact other hosts, or modify files outside its config directory
 
-## For full API parameter details
+## Additional resources
 
-See `references/api-reference.md` for complete endpoint documentation, response schemas, and parameter options.
+- For complete API endpoint documentation, see [references/api-reference.md](references/api-reference.md)
