@@ -21,6 +21,7 @@ show_help() {
       --timespan day|week|month|quarter|year  Aggregation window
       --window N                           Window size
       --series-type close|open|high|low    Price series to use
+      --adjusted true|false                Use adjusted prices (default: true)
       --order asc|desc                     Sort order
       --limit N                            Max results per page
 
@@ -35,6 +36,7 @@ show_help() {
       --long-window N                      Long window size
       --signal-window N                    Signal window size
       --series-type close|open|high|low    Price series to use
+      --adjusted true|false                Use adjusted prices (default: true)
       --order asc|desc                     Sort order
       --limit N                            Max results per page
 
@@ -42,15 +44,16 @@ show_help() {
     Show this help message."
 }
 
-cmd_sma() {
-  local ticker="$1"
+_fetch_indicator() {
+  local indicator="$1"
+  local ticker="$2"
   if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for sma subcommand"}' >&2
+    echo "{\"error\":\"ticker is required for ${indicator} subcommand\"}" >&2
     exit 1
   fi
-  shift
+  shift 2
 
-  local ts_gte ts_lte timespan window series_type order limit
+  local ts_gte ts_lte timespan window series_type order limit adjusted
   ts_gte=$(_parse_flag "--timestamp.gte" "$@")
   ts_lte=$(_parse_flag "--timestamp.lte" "$@")
   timespan=$(_parse_flag "--timespan" "$@")
@@ -58,9 +61,11 @@ cmd_sma() {
   series_type=$(_parse_flag "--series-type" "$@")
   order=$(_parse_flag "--order" "$@")
   limit=$(_parse_flag "--limit" "$@")
+  adjusted=$(_parse_flag "--adjusted" "$@")
+  adjusted="${adjusted:-true}"
 
   local url
-  url=$(_build_url "/v1/indicators/sma/${ticker}" \
+  url=$(_build_url "/v1/indicators/${indicator}/${ticker}" \
     "timestamp.gte=${ts_gte}" \
     "timestamp.lte=${ts_lte}" \
     "timespan=${timespan}" \
@@ -68,105 +73,19 @@ cmd_sma() {
     "series_type=${series_type}" \
     "order=${order}" \
     "limit=${limit}" \
-    "adjusted=true")
+    "adjusted=${adjusted}")
 
   local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-
-  if [[ $rc -ne 0 ]]; then
-    _json_output "$body"
+  if ! body=$(paginate "$url"); then
     exit 1
   fi
 
   _json_output "$body"
 }
 
-cmd_ema() {
-  local ticker="$1"
-  if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for ema subcommand"}' >&2
-    exit 1
-  fi
-  shift
-
-  local ts_gte ts_lte timespan window series_type order limit
-  ts_gte=$(_parse_flag "--timestamp.gte" "$@")
-  ts_lte=$(_parse_flag "--timestamp.lte" "$@")
-  timespan=$(_parse_flag "--timespan" "$@")
-  window=$(_parse_flag "--window" "$@")
-  series_type=$(_parse_flag "--series-type" "$@")
-  order=$(_parse_flag "--order" "$@")
-  limit=$(_parse_flag "--limit" "$@")
-
-  local url
-  url=$(_build_url "/v1/indicators/ema/${ticker}" \
-    "timestamp.gte=${ts_gte}" \
-    "timestamp.lte=${ts_lte}" \
-    "timespan=${timespan}" \
-    "window=${window}" \
-    "series_type=${series_type}" \
-    "order=${order}" \
-    "limit=${limit}" \
-    "adjusted=true")
-
-  local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-
-  if [[ $rc -ne 0 ]]; then
-    _json_output "$body"
-    exit 1
-  fi
-
-  _json_output "$body"
-}
-
-cmd_rsi() {
-  local ticker="$1"
-  if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for rsi subcommand"}' >&2
-    exit 1
-  fi
-  shift
-
-  local ts_gte ts_lte timespan window series_type order limit
-  ts_gte=$(_parse_flag "--timestamp.gte" "$@")
-  ts_lte=$(_parse_flag "--timestamp.lte" "$@")
-  timespan=$(_parse_flag "--timespan" "$@")
-  window=$(_parse_flag "--window" "$@")
-  series_type=$(_parse_flag "--series-type" "$@")
-  order=$(_parse_flag "--order" "$@")
-  limit=$(_parse_flag "--limit" "$@")
-
-  local url
-  url=$(_build_url "/v1/indicators/rsi/${ticker}" \
-    "timestamp.gte=${ts_gte}" \
-    "timestamp.lte=${ts_lte}" \
-    "timespan=${timespan}" \
-    "window=${window}" \
-    "series_type=${series_type}" \
-    "order=${order}" \
-    "limit=${limit}" \
-    "adjusted=true")
-
-  local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-
-  if [[ $rc -ne 0 ]]; then
-    _json_output "$body"
-    exit 1
-  fi
-
-  _json_output "$body"
-}
+cmd_sma() { _fetch_indicator sma "$@"; }
+cmd_ema() { _fetch_indicator ema "$@"; }
+cmd_rsi() { _fetch_indicator rsi "$@"; }
 
 cmd_macd() {
   local ticker="$1"
@@ -176,7 +95,8 @@ cmd_macd() {
   fi
   shift
 
-  local ts_gte ts_lte timespan short_window long_window signal_window series_type order limit
+  local ts_gte ts_lte timespan short_window long_window signal_window
+  local series_type order limit adjusted
   ts_gte=$(_parse_flag "--timestamp.gte" "$@")
   ts_lte=$(_parse_flag "--timestamp.lte" "$@")
   timespan=$(_parse_flag "--timespan" "$@")
@@ -186,6 +106,8 @@ cmd_macd() {
   series_type=$(_parse_flag "--series-type" "$@")
   order=$(_parse_flag "--order" "$@")
   limit=$(_parse_flag "--limit" "$@")
+  adjusted=$(_parse_flag "--adjusted" "$@")
+  adjusted="${adjusted:-true}"
 
   local url
   url=$(_build_url "/v1/indicators/macd/${ticker}" \
@@ -198,16 +120,10 @@ cmd_macd() {
     "series_type=${series_type}" \
     "order=${order}" \
     "limit=${limit}" \
-    "adjusted=true")
+    "adjusted=${adjusted}")
 
   local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-
-  if [[ $rc -ne 0 ]]; then
-    _json_output "$body"
+  if ! body=$(paginate "$url"); then
     exit 1
   fi
 

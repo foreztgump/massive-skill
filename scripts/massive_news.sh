@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/_lib.sh"
 
-usage() {
+show_help() {
   _usage "massive_news.sh" "Fetch market news articles" \
 "  massive_news.sh [OPTIONS]
 
@@ -19,28 +19,33 @@ Options:
 }
 
 if _has_flag "--help" "$@"; then
-  usage
+  show_help
 fi
 
-ticker=$(_parse_flag "--ticker" "$@")
-published_gte=$(_parse_flag "--published-utc.gte" "$@")
-published_lte=$(_parse_flag "--published-utc.lte" "$@")
-order=$(_parse_flag "--order" "$@")
-limit=$(_parse_flag "--limit" "$@")
-sort=$(_parse_flag "--sort" "$@")
+main() {
+  local ticker published_gte published_lte order limit sort_field
+  ticker=$(_parse_flag "--ticker" "$@")
+  published_gte=$(_parse_flag "--published-utc.gte" "$@")
+  published_lte=$(_parse_flag "--published-utc.lte" "$@")
+  order=$(_parse_flag "--order" "$@")
+  limit=$(_parse_flag "--limit" "$@")
+  sort_field=$(_parse_flag "--sort" "$@")
 
-url=$(_build_url "/v2/reference/news" \
-  "ticker=${ticker}" \
-  "published_utc.gte=${published_gte}" \
-  "published_utc.lte=${published_lte}" \
-  "order=${order}" \
-  "limit=${limit}" \
-  "sort=${sort}")
+  local url
+  url=$(_build_url "/v2/reference/news" \
+    "ticker=${ticker}" \
+    "published_utc.gte=${published_gte}" \
+    "published_utc.lte=${published_lte}" \
+    "order=${order}" \
+    "limit=${limit}" \
+    "sort=${sort_field}")
 
-body=$(paginate "$url")
-# shellcheck disable=SC2181
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
+  local body
+  if ! body=$(paginate "$url"); then
+    exit 1
+  fi
 
-_json_output "$body"
+  _json_output "$body"
+}
+
+main "$@"

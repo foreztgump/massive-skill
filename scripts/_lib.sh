@@ -84,7 +84,7 @@ make_api_request() {
     echo '{"error":"network request failed"}' >&2
     HTTP_CODE="000"
     echo "$HTTP_CODE" > "$_LIB_HTTP_CODE_FILE"
-    return 0
+    return 1
   fi
 
   HTTP_CODE=$(echo "$response" | tail -1)
@@ -141,6 +141,24 @@ check_http_status() {
   return 1
 }
 
+# _resolve_next_url <next_url>
+# Appends API key to a pagination URL if not already present.
+# Outputs the resolved URL to stdout, or empty string if input is empty.
+_resolve_next_url() {
+  local next_url="$1"
+  if [[ -z "$next_url" ]]; then
+    echo ""
+    return
+  fi
+  if [[ "$next_url" == *"apiKey="* ]]; then
+    echo "$next_url"
+  elif [[ "$next_url" == *"?"* ]]; then
+    echo "${next_url}&apiKey=${MASSIVE_API_KEY}"
+  else
+    echo "${next_url}?apiKey=${MASSIVE_API_KEY}"
+  fi
+}
+
 # paginate <url> [max_pages]
 # Follows next_url pagination, collecting all results into a single JSON array.
 # Outputs combined results as a JSON object with "results" array.
@@ -162,36 +180,27 @@ paginate() {
       return 1
     fi
 
-    # Extract results from this page
+    # If .results is not an array (e.g. technical indicators return an object),
+    # return the raw response directly — merging only works for arrays
+    local results_type
+    results_type=$(echo "$body" | jq -r '.results | type' 2>/dev/null)
+    if [[ "$results_type" != "array" ]]; then
+      echo "$body"
+      return 0
+    fi
+
     local page_results
-    page_results=$(echo "$body" | jq '.results // []' 2>/dev/null)
+    page_results=$(echo "$body" | jq '.results' 2>/dev/null)
     if [[ "$page_results" != "null" && "$page_results" != "[]" ]]; then
       all_results=$(echo "$all_results" "$page_results" | jq -s '.[0] + .[1]')
     fi
 
-    # Check for next_url
-    local next_url
-    next_url=$(echo "$body" | jq -r '.next_url // empty' 2>/dev/null)
-
-    if [[ -n "$next_url" ]]; then
-      # Append API key if not already present
-      if [[ "$next_url" != *"apiKey="* ]]; then
-        if [[ "$next_url" == *"?"* ]]; then
-          current_url="${next_url}&apiKey=${MASSIVE_API_KEY}"
-        else
-          current_url="${next_url}?apiKey=${MASSIVE_API_KEY}"
-        fi
-      else
-        current_url="$next_url"
-      fi
-    else
-      current_url=""
-    fi
-
+    local raw_next
+    raw_next=$(echo "$body" | jq -r '.next_url // empty' 2>/dev/null)
+    current_url=$(_resolve_next_url "$raw_next")
     page=$((page + 1))
   done
 
-  # Build response with combined results
   local count
   count=$(echo "$all_results" | jq 'length')
   echo "{\"status\":\"OK\",\"count\":${count},\"results\":${all_results}}"

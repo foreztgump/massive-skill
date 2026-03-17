@@ -46,12 +46,7 @@ cmd_list() {
     "sort=${sort}")
 
   local body
-  body=$(paginate "$url")
-  local rc=$?
-
-  _read_http_code
-
-  if [[ $rc -ne 0 ]]; then
+  if ! body=$(paginate "$url"); then
     exit 1
   fi
 
@@ -73,7 +68,6 @@ cmd_last() {
   _read_http_code
 
   if ! check_http_status "$HTTP_CODE" "$body" "get last quote"; then
-    _json_output "$body"
     exit 1
   fi
 
