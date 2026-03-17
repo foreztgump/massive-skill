@@ -24,10 +24,7 @@ show_help() {
 
 cmd_list() {
   local ticker="$1"
-  if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for list subcommand"}' >&2
-    exit 1
-  fi
+  _require_arg "ticker" "$ticker" "list"
   shift
 
   local ts_gte ts_lte order limit sort
@@ -45,33 +42,17 @@ cmd_list() {
     "limit=${limit}" \
     "sort=${sort}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_last() {
   local ticker="$1"
-  if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for last subcommand"}' >&2
-    exit 1
-  fi
+  _require_arg "ticker" "$ticker" "last"
 
   local url
   url=$(_build_url "/v2/last/trade/${ticker}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "get last trade"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "get last trade" "$url"
 }
 
 # --- main ---

@@ -51,11 +51,9 @@ fetch_financial_statement() {
   local action="$2"
   shift 2
 
-  if [[ $# -eq 0 || "$1" == --* ]]; then
-    echo "{\"error\":\"${action} requires a ticker symbol\"}" >&2
-    exit 1
-  fi
-  local ticker="$1"
+  local ticker="${1:-}"
+  [[ "$ticker" == --* ]] && ticker=""
+  _require_arg "ticker" "$ticker" "$action"
   shift
 
   local period limit order filing_gte filing_lte
@@ -74,15 +72,7 @@ fetch_financial_statement() {
     "filing_date.gte=${filing_gte}" \
     "filing_date.lte=${filing_lte}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "$action"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "$action" "$url"
 }
 
 # Fetch a ticker-required simple endpoint (short-interest, short-volume)
@@ -91,11 +81,9 @@ fetch_ticker_required() {
   local action="$2"
   shift 2
 
-  if [[ $# -eq 0 || "$1" == --* ]]; then
-    echo "{\"error\":\"${action} requires a ticker symbol\"}" >&2
-    exit 1
-  fi
-  local ticker="$1"
+  local ticker="${1:-}"
+  [[ "$ticker" == --* ]] && ticker=""
+  _require_arg "ticker" "$ticker" "$action"
   shift
 
   local limit order
@@ -108,23 +96,13 @@ fetch_ticker_required() {
     "limit=${limit}" \
     "order=${order}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "$action"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "$action" "$url"
 }
 
 cmd_ratios() {
-  if [[ $# -eq 0 || "$1" == --* ]]; then
-    echo '{"error":"ratios requires a ticker symbol"}' >&2
-    exit 1
-  fi
-  local ticker="$1"
+  local ticker="${1:-}"
+  [[ "$ticker" == --* ]] && ticker=""
+  _require_arg "ticker" "$ticker" "ratios"
   shift
 
   local period limit order
@@ -139,15 +117,7 @@ cmd_ratios() {
     "limit=${limit}" \
     "order=${order}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "ratios"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "ratios" "$url"
 }
 
 cmd_dividends() {
@@ -168,12 +138,7 @@ cmd_dividends() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_splits() {
@@ -192,12 +157,7 @@ cmd_splits() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_ipos() {
@@ -216,12 +176,7 @@ cmd_ipos() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_short_interest() {

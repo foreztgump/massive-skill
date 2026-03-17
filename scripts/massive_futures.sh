@@ -66,12 +66,7 @@ cmd_contracts() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_products() {
@@ -90,12 +85,7 @@ cmd_products() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_schedules() {
@@ -108,11 +98,7 @@ cmd_schedules() {
     "product_code=${product_code}" \
     "exchange=${exchange}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "schedules" || exit 1
-  _json_output "$body"
+  _fetch_and_output "schedules" "$url"
 }
 
 cmd_snapshot() {
@@ -129,19 +115,13 @@ cmd_snapshot() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_bars() {
-  if [[ $# -lt 3 ]]; then
-    echo '{"error":"bars requires: <ticker> <from> <to>"}' >&2
-    exit 1
-  fi
+  _require_arg "ticker" "${1:-}" "bars"
+  _require_arg "from" "${2:-}" "bars"
+  _require_arg "to" "${3:-}" "bars"
 
   local ticker="$1" from="$2" to="$3"
   shift 3
@@ -166,18 +146,11 @@ cmd_bars() {
     "sort=${sort_order}" \
     "limit=${limit}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "bars" || exit 1
-  _json_output "$body"
+  _fetch_and_output "bars" "$url"
 }
 
 cmd_trades() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"trades requires: <ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "ticker" "${1:-}" "trades"
 
   local ticker="$1"
   shift
@@ -197,19 +170,11 @@ cmd_trades() {
     "limit=${limit}" \
     "sort=${sort}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_quotes() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"quotes requires: <ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "ticker" "${1:-}" "quotes"
 
   local ticker="$1"
   shift
@@ -229,12 +194,7 @@ cmd_quotes() {
     "limit=${limit}" \
     "sort=${sort}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 # --- Main dispatch ---

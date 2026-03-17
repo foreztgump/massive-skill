@@ -80,19 +80,11 @@ cmd_contracts() {
     "limit=${limit}" \
     "sort=${sort_val}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_contract() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"contract requires: <options_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "contract"
 
   local options_ticker="$1"
   shift
@@ -100,18 +92,11 @@ cmd_contract() {
   local url
   url=$(_build_url "/v3/reference/options/contracts/${options_ticker}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "contract" || exit 1
-  _json_output "$body"
+  _fetch_and_output "contract" "$url"
 }
 
 cmd_chain() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"chain requires: <underlying_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "underlying_ticker" "${1:-}" "chain"
 
   local underlying_ticker="$1"
   shift
@@ -131,19 +116,12 @@ cmd_chain() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_snapshot() {
-  if [[ $# -lt 2 ]]; then
-    echo '{"error":"snapshot requires: <underlying_ticker> <option_contract>"}' >&2
-    exit 1
-  fi
+  _require_arg "underlying_ticker" "${1:-}" "snapshot"
+  _require_arg "option_contract" "${2:-}" "snapshot"
 
   local underlying_ticker="$1" option_contract="$2"
   shift 2
@@ -151,18 +129,13 @@ cmd_snapshot() {
   local url
   url=$(_build_url "/v3/snapshot/options/${underlying_ticker}/${option_contract}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "snapshot" || exit 1
-  _json_output "$body"
+  _fetch_and_output "snapshot" "$url"
 }
 
 cmd_bars() {
-  if [[ $# -lt 3 ]]; then
-    echo '{"error":"bars requires: <options_ticker> <from> <to>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "bars"
+  _require_arg "from" "${2:-}" "bars"
+  _require_arg "to" "${3:-}" "bars"
 
   local options_ticker="$1" from="$2" to="$3"
   shift 3
@@ -184,18 +157,11 @@ cmd_bars() {
     "sort=${sort_order}" \
     "limit=${limit}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "bars" || exit 1
-  _json_output "$body"
+  _fetch_and_output "bars" "$url"
 }
 
 cmd_prev() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"prev requires: <options_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "prev"
 
   local options_ticker="$1"
   shift
@@ -207,18 +173,11 @@ cmd_prev() {
   url=$(_build_url "/v2/aggs/ticker/${options_ticker}/prev" \
     "adjusted=${adjusted}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "prev" || exit 1
-  _json_output "$body"
+  _fetch_and_output "prev" "$url"
 }
 
 cmd_trades() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"trades requires: <options_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "trades"
 
   local options_ticker="$1"
   shift
@@ -238,19 +197,11 @@ cmd_trades() {
     "limit=${limit}" \
     "sort=${sort}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_quotes() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"quotes requires: <options_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "quotes"
 
   local options_ticker="$1"
   shift
@@ -270,19 +221,11 @@ cmd_quotes() {
     "limit=${limit}" \
     "sort=${sort}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_last_trade() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"last-trade requires: <options_ticker>"}' >&2
-    exit 1
-  fi
+  _require_arg "options_ticker" "${1:-}" "last-trade"
 
   local options_ticker="$1"
   shift
@@ -290,11 +233,7 @@ cmd_last_trade() {
   local url
   url=$(_build_url "/v2/last/trade/${options_ticker}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "last-trade" || exit 1
-  _json_output "$body"
+  _fetch_and_output "last-trade" "$url"
 }
 
 # --- Main dispatch ---

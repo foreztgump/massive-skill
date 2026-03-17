@@ -40,12 +40,7 @@ main() {
     "limit=${limit}" \
     "sort=${sort_field}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 main "$@"

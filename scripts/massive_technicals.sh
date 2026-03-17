@@ -46,11 +46,8 @@ show_help() {
 
 _fetch_indicator() {
   local indicator="$1"
-  local ticker="$2"
-  if [[ -z "$ticker" ]]; then
-    echo "{\"error\":\"ticker is required for ${indicator} subcommand\"}" >&2
-    exit 1
-  fi
+  local ticker="${2:-}"
+  _require_arg "ticker" "$ticker" "$indicator"
   shift 2
 
   local ts_gte ts_lte timespan window series_type order limit adjusted
@@ -75,12 +72,7 @@ _fetch_indicator() {
     "limit=${limit}" \
     "adjusted=${adjusted}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_sma() { _fetch_indicator sma "$@"; }
@@ -88,11 +80,8 @@ cmd_ema() { _fetch_indicator ema "$@"; }
 cmd_rsi() { _fetch_indicator rsi "$@"; }
 
 cmd_macd() {
-  local ticker="$1"
-  if [[ -z "$ticker" ]]; then
-    echo '{"error":"ticker is required for macd subcommand"}' >&2
-    exit 1
-  fi
+  local ticker="${1:-}"
+  _require_arg "ticker" "$ticker" "macd"
   shift
 
   local ts_gte ts_lte timespan short_window long_window signal_window
@@ -122,12 +111,7 @@ cmd_macd() {
     "limit=${limit}" \
     "adjusted=${adjusted}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 # --- main ---

@@ -32,30 +32,14 @@ cmd_status() {
   local url
   url=$(_build_url "/v1/marketstatus/now")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "get market status"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "get market status" "$url"
 }
 
 cmd_holidays() {
   local url
   url=$(_build_url "/v1/marketstatus/upcoming")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "get market holidays"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "get market holidays" "$url"
 }
 
 cmd_exchanges() {
@@ -68,15 +52,7 @@ cmd_exchanges() {
     "asset_class=${asset_class}" \
     "locale=${locale}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "get exchanges"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "get exchanges" "$url"
 }
 
 cmd_conditions() {
@@ -89,15 +65,7 @@ cmd_conditions() {
     "asset_class=${asset_class}" \
     "data_type=${data_type}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-
-  if ! check_http_status "$HTTP_CODE" "$body" "get conditions"; then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _fetch_and_output "get conditions" "$url"
 }
 
 # --- main ---

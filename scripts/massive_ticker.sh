@@ -47,31 +47,17 @@ cmd_list() {
     "order=${order}" \
     "limit=${limit}")
 
-  local body
-  if ! body=$(paginate "$url"); then
-    exit 1
-  fi
-
-  _json_output "$body"
+  _paginate_and_output "$url"
 }
 
 cmd_details() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"details requires: <ticker>"}' >&2
-    exit 1
-  fi
-
-  local ticker="$1"
-  shift
+  local ticker="${1:-}"
+  _require_arg "ticker" "$ticker" "details"
 
   local url
   url=$(_build_url "/v3/reference/tickers/${ticker}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "ticker details" || exit 1
-  _json_output "$body"
+  _fetch_and_output "ticker details" "$url"
 }
 
 cmd_types() {
@@ -84,30 +70,17 @@ cmd_types() {
     "asset_class=${asset_class}" \
     "locale=${locale_val}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "ticker types" || exit 1
-  _json_output "$body"
+  _fetch_and_output "ticker types" "$url"
 }
 
 cmd_related() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"related requires: <ticker>"}' >&2
-    exit 1
-  fi
-
-  local ticker="$1"
-  shift
+  local ticker="${1:-}"
+  _require_arg "ticker" "$ticker" "related"
 
   local url
   url=$(_build_url "/v1/related-companies/${ticker}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "related companies" || exit 1
-  _json_output "$body"
+  _fetch_and_output "related companies" "$url"
 }
 
 # --- Main dispatch ---

@@ -34,12 +34,10 @@ show_help() {
 }
 
 cmd_bars() {
-  if [[ $# -lt 3 ]]; then
-    echo '{"error":"bars requires: <ticker> <from> <to>"}' >&2
-    exit 1
-  fi
-
-  local ticker="$1" from="$2" to="$3"
+  local ticker="${1:-}" from="${2:-}" to="${3:-}"
+  _require_arg "ticker" "$ticker" "bars"
+  _require_arg "from" "$from" "bars"
+  _require_arg "to" "$to" "bars"
   shift 3
 
   local timespan multiplier adjusted sort_order limit
@@ -59,20 +57,12 @@ cmd_bars() {
     "sort=${sort_order}" \
     "limit=${limit}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "bars" || exit 1
-  _json_output "$body"
+  _fetch_and_output "bars" "$url"
 }
 
 cmd_daily() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"daily requires: <date>"}' >&2
-    exit 1
-  fi
-
-  local date="$1"
+  local date="${1:-}"
+  _require_arg "date" "$date" "daily"
   shift
 
   local adjusted
@@ -82,20 +72,13 @@ cmd_daily() {
   local url
   url=$(_build_url "$path" "adjusted=${adjusted}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "daily" || exit 1
-  _json_output "$body"
+  _fetch_and_output "daily" "$url"
 }
 
 cmd_open_close() {
-  if [[ $# -lt 2 ]]; then
-    echo '{"error":"open-close requires: <ticker> <date>"}' >&2
-    exit 1
-  fi
-
-  local ticker="$1" date="$2"
+  local ticker="${1:-}" date="${2:-}"
+  _require_arg "ticker" "$ticker" "open-close"
+  _require_arg "date" "$date" "open-close"
   shift 2
 
   local adjusted
@@ -105,20 +88,12 @@ cmd_open_close() {
   local url
   url=$(_build_url "$path" "adjusted=${adjusted}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "open-close" || exit 1
-  _json_output "$body"
+  _fetch_and_output "open-close" "$url"
 }
 
 cmd_prev() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"prev requires: <ticker>"}' >&2
-    exit 1
-  fi
-
-  local ticker="$1"
+  local ticker="${1:-}"
+  _require_arg "ticker" "$ticker" "prev"
   shift
 
   local adjusted
@@ -128,11 +103,7 @@ cmd_prev() {
   local url
   url=$(_build_url "$path" "adjusted=${adjusted}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "prev" || exit 1
-  _json_output "$body"
+  _fetch_and_output "prev" "$url"
 }
 
 cmd_snapshot() {
@@ -164,20 +135,12 @@ cmd_snapshot() {
   local url
   url=$(_build_url "$path" "${params[@]}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "snapshot" || exit 1
-  _json_output "$body"
+  _fetch_and_output "snapshot" "$url"
 }
 
 cmd_movers() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"movers requires: <gainers|losers>"}' >&2
-    exit 1
-  fi
-
-  local direction="$1"
+  local direction="${1:-}"
+  _require_arg "direction" "$direction" "movers"
   shift
 
   if [[ "$direction" != "gainers" && "$direction" != "losers" ]]; then
@@ -194,20 +157,12 @@ cmd_movers() {
   local url
   url=$(_build_url "$path" "${params[@]}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "movers" || exit 1
-  _json_output "$body"
+  _fetch_and_output "movers" "$url"
 }
 
 cmd_universal() {
-  if [[ $# -lt 1 ]]; then
-    echo '{"error":"universal requires: <tickers>"}' >&2
-    exit 1
-  fi
-
-  local tickers="$1"
+  local tickers="${1:-}"
+  _require_arg "tickers" "$tickers" "universal"
   shift
 
   local snap_type
@@ -221,11 +176,7 @@ cmd_universal() {
   local url
   url=$(_build_url "/v3/snapshot" "${params[@]}")
 
-  local body
-  body=$(make_api_request "$url")
-  _read_http_code
-  check_http_status "$HTTP_CODE" "$body" "universal snapshot" || exit 1
-  _json_output "$body"
+  _fetch_and_output "universal snapshot" "$url"
 }
 
 # --- Main dispatch ---

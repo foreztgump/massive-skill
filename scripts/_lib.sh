@@ -13,11 +13,8 @@ readonly LIB_BASE_URL="https://api.massive.com"
 readonly LIB_CONFIG_DIR="${HOME}/.config/massive-skill"
 readonly LIB_MAX_PAGES=10
 
-# Global set by make_api_request for callers to inspect
-HTTP_CODE=""
-
-# File used to persist HTTP_CODE across subshells
-_LIB_HTTP_CODE_FILE="$(mktemp "${TMPDIR:-/tmp}/.massive_http_code_XXXXXX")"
+# File used to persist HTTP_CODE across subshells (deterministic path, no mktemp fork)
+_LIB_HTTP_CODE_FILE="/tmp/.massive_http_code_$$"
 trap 'rm -f "$_LIB_HTTP_CODE_FILE"' EXIT
 
 # _require_api_key
@@ -41,9 +38,11 @@ _build_url() {
   local param
 
   for param in "$@"; do
+    # Skip params with no '=' separator
+    [[ "$param" != *"="* ]] && continue
     local key="${param%%=*}"
     local val="${param#*=}"
-    if [[ -n "$val" && "$val" != "$key" ]]; then
+    if [[ -n "$val" ]]; then
       url="${url}${sep}${key}=$(_urlencode "$val")"
       sep="&"
     fi
@@ -58,13 +57,14 @@ _build_url() {
 _urlencode() {
   local string="$1"
   local encoded=""
-  local i c
+  local i c hex
   for (( i=0; i<${#string}; i++ )); do
     c="${string:$i:1}"
     case "$c" in
       [a-zA-Z0-9.~_-]) encoded+="$c" ;;
       ' ') encoded+='+' ;;
-      *) encoded+=$(printf '%%%02X' "'$c") ;;
+      # printf -v avoids forking a subshell per character
+      *) printf -v hex '%%%02X' "'$c"; encoded+="$hex" ;;
     esac
   done
   echo "$encoded"
@@ -72,7 +72,7 @@ _urlencode() {
 
 # make_api_request <url>
 # Makes an authenticated GET request to the Massive API.
-# Sets global HTTP_CODE.
+# Sets global HTTP_CODE (also written to file for subshell access).
 # Outputs response body to stdout.
 make_api_request() {
   local url="$1"
@@ -87,19 +87,17 @@ make_api_request() {
     return 1
   fi
 
-  HTTP_CODE=$(echo "$response" | tail -1)
+  # Extract HTTP code and body using bash string ops (no fork)
+  HTTP_CODE="${response##*$'\n'}"
   echo "$HTTP_CODE" > "$_LIB_HTTP_CODE_FILE"
-  local body
-  body=$(echo "$response" | sed '$d')
-
-  echo "$body"
+  echo "${response%$'\n'*}"
   return 0
 }
 
 # _read_http_code — read HTTP_CODE from file (use after subshell calls)
 _read_http_code() {
   if [[ -f "$_LIB_HTTP_CODE_FILE" ]]; then
-    HTTP_CODE=$(cat "$_LIB_HTTP_CODE_FILE")
+    read -r HTTP_CODE < "$_LIB_HTTP_CODE_FILE"
   fi
 }
 
@@ -130,7 +128,6 @@ check_http_status() {
     return 1
   fi
 
-  # Try to extract error message from response body
   local msg
   msg=$(echo "$body" | jq -r '.error // .message // .status // empty' 2>/dev/null)
   if [[ -n "$msg" ]]; then
@@ -141,9 +138,43 @@ check_http_status() {
   return 1
 }
 
+# _fetch_and_output <action> <url>
+# Makes an API request, checks status, and outputs JSON. Exits 1 on error.
+# Replaces the repeated make_api_request + _read_http_code + check_http_status + _json_output pattern.
+_fetch_and_output() {
+  local action="$1"
+  local url="$2"
+  local body
+  body=$(make_api_request "$url")
+  _read_http_code
+  check_http_status "$HTTP_CODE" "$body" "$action" || exit 1
+  _json_output "$body"
+}
+
+# _paginate_and_output <url>
+# Paginates an endpoint and outputs combined JSON. Exits 1 on error.
+# Replaces the repeated paginate + _json_output pattern.
+_paginate_and_output() {
+  local url="$1"
+  local body
+  body=$(paginate "$url") || exit 1
+  _json_output "$body"
+}
+
+# _require_arg <name> <value> <command>
+# Validates that a required argument is present. Exits with error if not.
+_require_arg() {
+  local name="$1"
+  local value="$2"
+  local command="$3"
+  if [[ -z "$value" ]]; then
+    echo "{\"error\":\"${command} requires: <${name}>\"}" >&2
+    exit 1
+  fi
+}
+
 # _resolve_next_url <next_url>
 # Appends API key to a pagination URL if not already present.
-# Outputs the resolved URL to stdout, or empty string if input is empty.
 _resolve_next_url() {
   local next_url="$1"
   if [[ -z "$next_url" ]]; then
@@ -167,8 +198,11 @@ paginate() {
   local url="$1"
   local max_pages="${2:-$LIB_MAX_PAGES}"
   local page=0
-  local all_results="[]"
   local current_url="$url"
+  local tmpfile
+  tmpfile=$(mktemp)
+  # shellcheck disable=SC2064
+  trap "rm -f '$tmpfile'" RETURN
 
   while [[ -n "$current_url" && "$page" -lt "$max_pages" ]]; do
     local body
@@ -177,32 +211,36 @@ paginate() {
 
     if ! check_http_status "$HTTP_CODE" "$body" "paginate"; then
       echo "$body"
+      rm -f "$tmpfile"
       return 1
     fi
 
-    # If .results is not an array (e.g. technical indicators return an object),
-    # return the raw response directly — merging only works for arrays
-    local results_type
-    results_type=$(echo "$body" | jq -r '.results | type' 2>/dev/null)
+    # Single jq call to extract results type, results, and next_url
+    local results_type page_results raw_next
+    eval "$(echo "$body" | jq -r '
+      "results_type=" + (.results | type) +
+      "\nraw_next=" + (.next_url // "" | @sh)
+    ' 2>/dev/null)"
+
+    # If .results is not an array (e.g. technical indicators), return raw
     if [[ "$results_type" != "array" ]]; then
       echo "$body"
+      rm -f "$tmpfile"
       return 0
     fi
 
-    local page_results
-    page_results=$(echo "$body" | jq '.results' 2>/dev/null)
-    if [[ "$page_results" != "null" && "$page_results" != "[]" ]]; then
-      all_results=$(echo "$all_results" "$page_results" | jq -s '.[0] + .[1]')
-    fi
+    # Append page results to temp file (avoids O(n^2) re-merge)
+    echo "$body" | jq -c '.results // []' >> "$tmpfile" 2>/dev/null
 
-    local raw_next
-    raw_next=$(echo "$body" | jq -r '.next_url // empty' 2>/dev/null)
     current_url=$(_resolve_next_url "$raw_next")
     page=$((page + 1))
   done
 
-  local count
+  # Merge all pages in one pass
+  local all_results count
+  all_results=$(jq -s 'add // []' "$tmpfile")
   count=$(echo "$all_results" | jq 'length')
+  rm -f "$tmpfile"
   echo "{\"status\":\"OK\",\"count\":${count},\"results\":${all_results}}"
 }
 
@@ -236,13 +274,13 @@ _has_flag() {
 }
 
 # _json_output <body>
-# Outputs pretty-printed JSON if stdout is a terminal, compact otherwise.
+# Outputs pretty-printed JSON if stdout is a terminal, raw otherwise.
+# Skips jq re-parse when piped (API already returns valid JSON).
 _json_output() {
-  local body="$1"
   if [[ -t 1 ]]; then
-    echo "$body" | jq '.'
+    echo "$1" | jq '.'
   else
-    echo "$body" | jq -c '.'
+    echo "$1"
   fi
 }
 
@@ -265,4 +303,4 @@ EOF
 
 # Initialize: require API key on source
 _require_api_key
-mkdir -p "$LIB_CONFIG_DIR" 2>/dev/null || true
+[[ -d "$LIB_CONFIG_DIR" ]] || mkdir -p "$LIB_CONFIG_DIR" 2>/dev/null
