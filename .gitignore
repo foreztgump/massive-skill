@@ -1,9 +1,33 @@
+# Environment / secrets
+.env
+.env.*
+*.key
+
+# Editor swap files
 *.swp
 *.swo
 *~
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
-.env
-.env.*
+Thumbs.db
+
+# Config cache
+.config/massive-skill/
+
+# Test artifacts
+tests/*.log
+tests/tmp/
+
+# OpenSpec artifacts
+openspec/specs/
+openspec/archive/
+
+# Node (if any tooling)
 node_modules/
+
+# Python (if any tooling)
 __pycache__/
 *.pyc
