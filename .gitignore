@@ -21,9 +21,16 @@ Thumbs.db
 tests/*.log
 tests/tmp/
 
-# OpenSpec artifacts
-openspec/specs/
-openspec/archive/
+# Internal tooling docs
+CLAUDE.md
+CODE_PRINCIPLES.md
+SKILL.md
+.coderabbit.yaml
+.claude/
+openspec/
+docs/
+references/
+skills/
 
 # Node (if any tooling)
 node_modules/
