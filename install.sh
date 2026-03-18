@@ -22,7 +22,7 @@ detect_platform() {
 install_claude_code() {
   local target="${HOME}/.claude/skills/${SKILL_NAME}"
   mkdir -p "$(dirname "$target")"
-  ln -sfn "$REPO_DIR" "$target"
+  ln -sfn "${REPO_DIR}/skills/${SKILL_NAME}" "$target"
   echo "Installed: Claude Code skill at ${target}"
   echo "  Skill file: ${target}/SKILL.md"
 }
@@ -31,7 +31,7 @@ install_claude_code() {
 install_cursor() {
   local target="${HOME}/.cursor/skills/${SKILL_NAME}"
   mkdir -p "$(dirname "$target")"
-  ln -sfn "$REPO_DIR" "$target"
+  ln -sfn "${REPO_DIR}/skills/${SKILL_NAME}" "$target"
   echo "Installed: Cursor skill at ${target}"
 }
 
@@ -39,7 +39,7 @@ install_cursor() {
 install_codex() {
   local target="${HOME}/.codex/skills/${SKILL_NAME}"
   mkdir -p "$(dirname "$target")"
-  ln -sfn "$REPO_DIR" "$target"
+  ln -sfn "${REPO_DIR}/skills/${SKILL_NAME}" "$target"
   echo "Installed: Codex skill at ${target}"
 }
 

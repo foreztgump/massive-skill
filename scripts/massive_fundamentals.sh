@@ -9,17 +9,11 @@ show_help() {
 "  massive_fundamentals.sh <subcommand> [OPTIONS]
 
 Subcommands:
-  balance-sheets <TICKER> [--period annual|quarterly|ttm] [--limit N]
+  financials <TICKER>      [--timeframe annual|quarterly|ttm] [--limit N]
                            [--order asc|desc] [--filing-date.gte DATE]
                            [--filing-date.lte DATE]
-  income <TICKER>          [--period annual|quarterly|ttm] [--limit N]
-                           [--order asc|desc] [--filing-date.gte DATE]
-                           [--filing-date.lte DATE]
-  cash-flow <TICKER>       [--period annual|quarterly|ttm] [--limit N]
-                           [--order asc|desc] [--filing-date.gte DATE]
-                           [--filing-date.lte DATE]
-  ratios <TICKER>          [--period annual|quarterly|ttm] [--limit N]
-                           [--order asc|desc]
+                           Returns balance sheet, income statement, cash flow,
+                           and comprehensive income in one call.
   dividends                [--ticker SYMBOL] [--ex-dividend-date.gte DATE]
                            [--ex-dividend-date.lte DATE] [--frequency 1|2|4|12]
                            [--order asc|desc] [--limit N]
@@ -45,34 +39,31 @@ shift
 
 # --- Helpers for common flag groups ---
 
-# Fetch a financial statement (balance-sheets, income-statements, cash-flow-statements)
-fetch_financial_statement() {
-  local endpoint="$1"
-  local action="$2"
-  shift 2
-
+# Fetch financials (balance sheet, income statement, cash flow, comprehensive income)
+# Uses the /vX/reference/financials endpoint which returns all statement types.
+cmd_financials() {
   local ticker="${1:-}"
   [[ "$ticker" == --* ]] && ticker=""
-  _require_arg "ticker" "$ticker" "$action"
+  _require_arg "ticker" "$ticker" "financials"
   shift
 
-  local period limit order filing_gte filing_lte
-  period=$(_parse_flag "--period" "$@")
+  local timeframe limit order filing_gte filing_lte
+  timeframe=$(_parse_flag "--timeframe" "$@")
   limit=$(_parse_flag "--limit" "$@")
   order=$(_parse_flag "--order" "$@")
   filing_gte=$(_parse_flag "--filing-date.gte" "$@")
   filing_lte=$(_parse_flag "--filing-date.lte" "$@")
 
   local url
-  url=$(_build_url "$endpoint" \
+  url=$(_build_url "/vX/reference/financials" \
     "ticker=${ticker}" \
-    "period=${period}" \
+    "timeframe=${timeframe}" \
     "limit=${limit}" \
     "order=${order}" \
     "filing_date.gte=${filing_gte}" \
     "filing_date.lte=${filing_lte}")
 
-  _fetch_and_output "$action" "$url"
+  _paginate_and_output "$url"
 }
 
 # Fetch a ticker-required simple endpoint (short-interest, short-volume)
@@ -97,27 +88,6 @@ fetch_ticker_required() {
     "order=${order}")
 
   _fetch_and_output "$action" "$url"
-}
-
-cmd_ratios() {
-  local ticker="${1:-}"
-  [[ "$ticker" == --* ]] && ticker=""
-  _require_arg "ticker" "$ticker" "ratios"
-  shift
-
-  local period limit order
-  period=$(_parse_flag "--period" "$@")
-  limit=$(_parse_flag "--limit" "$@")
-  order=$(_parse_flag "--order" "$@")
-
-  local url
-  url=$(_build_url "/stocks/v1/financials/ratios" \
-    "ticker=${ticker}" \
-    "period=${period}" \
-    "limit=${limit}" \
-    "order=${order}")
-
-  _fetch_and_output "ratios" "$url"
 }
 
 cmd_dividends() {
@@ -169,7 +139,7 @@ cmd_ipos() {
   limit=$(_parse_flag "--limit" "$@")
 
   local url
-  url=$(_build_url "/stocks/v1/ipos" \
+  url=$(_build_url "/vX/reference/ipos" \
     "ticker=${ticker}" \
     "listing_date.gte=${listing_gte}" \
     "listing_date.lte=${listing_lte}" \
@@ -188,17 +158,8 @@ cmd_short_volume() {
 }
 
 case "$subcommand" in
-  balance-sheets)
-    fetch_financial_statement "/stocks/v1/financials/balance-sheets" "balance-sheets" "$@"
-    ;;
-  income)
-    fetch_financial_statement "/stocks/v1/financials/income-statements" "income" "$@"
-    ;;
-  cash-flow)
-    fetch_financial_statement "/stocks/v1/financials/cash-flow-statements" "cash-flow" "$@"
-    ;;
-  ratios)
-    cmd_ratios "$@"
+  financials)
+    cmd_financials "$@"
     ;;
   dividends)
     cmd_dividends "$@"

@@ -124,7 +124,13 @@ check_http_status() {
   fi
 
   if [[ "$http_code" -eq 403 ]]; then
-    echo '{"error":"access denied (HTTP 403). Check your API key and plan."}' >&2
+    local api_msg
+    api_msg=$(echo "$body" | jq -r '.message // .error // empty' 2>/dev/null)
+    if [[ -n "$api_msg" ]]; then
+      jq -n --arg msg "access denied (HTTP 403): $api_msg" '{"error": $msg}' >&2
+    else
+      echo '{"error":"access denied (HTTP 403). Check your API key and plan at https://massive.com/pricing"}' >&2
+    fi
     return 1
   fi
 

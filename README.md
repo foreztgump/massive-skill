@@ -46,7 +46,7 @@ scripts/massive_price.sh bars AAPL 2025-03-10 2025-03-14 | scripts/massive_forma
 | `massive_trades.sh` | Tick-level trade data | `list`, `last` |
 | `massive_quotes.sh` | NBBO quote data | `list`, `last` |
 | `massive_news.sh` | Market news with sentiment | *(flat)* |
-| `massive_fundamentals.sh` | Financials & corporate actions | `balance-sheets`, `income`, `cash-flow`, `ratios`, `dividends`, `splits`, `ipos`, `short-interest`, `short-volume` |
+| `massive_fundamentals.sh` | Financials & corporate actions | `financials`, `dividends`, `splits`, `ipos`, `short-interest`, `short-volume` |
 | `massive_technicals.sh` | Technical indicators | `sma`, `ema`, `rsi`, `macd` |
 | `massive_options.sh` | Options data | `contracts`, `contract`, `chain`, `snapshot`, `bars`, `prev`, `trades`, `quotes`, `last-trade` |
 | `massive_futures.sh` | Futures data | `contracts`, `products`, `schedules`, `snapshot`, `bars`, `trades`, `quotes` |
